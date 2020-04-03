@@ -1,33 +1,196 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Parameters": {
-        "vpcName": {
+        "lambdaRoleName": {
             "Type": "String",
             "Description": "XXX"
         },
-        "vpcCidr": {
+        "inlinePolicyName": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "lambdaFunctionName": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "eventsRuleName": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "sesDomainArn": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "s3BucketName": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "s3FileKey": {
             "Type": "String",
             "Description": "XXX"
         }
     },
     "Resources": {
-        "VPC": {
-            "Type": "AWS::EC2::VPC",
+        "CreateRole": {
+            "Type": "AWS::IAM::Role",
             "Properties": {
-                "CidrBlock": {
-                    "Ref": "vpcCidr"
-                },
-                "EnableDnsSupport": "true",
-                "EnableDnsHostnames": "true",
-                "InstanceTenancy": "default",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": {
-                            "Ref": "vpcName"
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
                         }
+                    ]
+                },
+                "RoleName": {
+                    "Ref": "lambdaRoleName"
+                }
+            }
+        },
+        "CreatePolicy": {
+            "DependsOn": [
+                "CreateRole"
+            ],
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": {
+                    "Ref": "inlinePolicyName"
+                },
+                "Roles": [
+                    {
+                        "Ref": "CreateRole"
+                    }
+                ],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "ReadIamAccessKeys",
+                            "Effect": "Allow",
+                            "Action": [
+                                "iam:ListUsers",
+                                "iam:ListAccessKeys"
+                            ],
+                            "Resource": "*"
+                        },
+                        {
+                            "Sid": "SendToSes",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ses:SendEmail",
+                                "ses:SendTemplatedEmail",
+                                "ses:SendRawEmail"
+                            ],
+                            "Resource": {
+                                "Ref": "sesDomainArn"
+                            }
+                        },
+                        {
+                            "Sid": "ReadFromS3",
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:GetObject"
+                            ],
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "s3BucketName"
+                                        },
+                                        "/",
+                                        {
+                                            "Ref": "s3FileKey"
+                                        }
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "LambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+                "CreateRole",
+                "CreatePolicy"
+            ],
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "lambdaFunctionName"
+                },
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "s3BucketName"
+                    },
+                    "S3Key": {
+                        "Ref": "s3FileKey"
+                    }
+                },
+                "Role": {
+                    "Fn::GetAtt": [
+                        "CreateRole",
+                        "Arn"
+                    ]
+                },
+                "Timeout": 20,
+                "Handler": "lambda_function.lambda_handler",
+                "Runtime": "python3.7",
+                "MemorySize": 128
+            }
+        },
+        "ScheduledRule": {
+            "DependsOn": [
+                "LambdaFunction"
+            ],
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Name": {
+                    "Ref": "eventsRuleName"
+                },
+                "Description": "ScheduledRule",
+                "ScheduleExpression": "cron(30 13 ? * MON-FRI *)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "LambdaFunction",
+                                "Arn"
+                            ]
+                        },
+                        "Id": "Wolf-TargetFunctionV1"
                     }
                 ]
+            }
+        },
+        "PermissionForEventsToInvokeLambda": {
+            "DependsOn": [
+                "LambdaFunction"
+            ],
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "LambdaFunction"
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "ScheduledRule",
+                        "Arn"
+                    ]
+                }
             }
         }
     }

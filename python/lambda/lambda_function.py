@@ -55,7 +55,7 @@ def lambda_handler(event, context):
         sesClient = boto3.client('ses',region_name=AWS_SES_REGION)
 
         #Provide the contents of the email.
-        response = sesClient.send_email(
+        sesClient.send_email(
             Destination={
                 'ToAddresses': [
                     MAIN_RECIPIENT,
