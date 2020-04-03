@@ -1,0 +1,12 @@
+{
+    "stackParameters": {
+        "stackName":     "test01-use1-vpc",
+        "stackTemplate": ".\\userkeycheck_template.json",
+        "stackRegion":   "us-west-2",
+        "isIamStack":    "false"
+    },
+    "templateParameters": {
+        "vpcName": "test01-test1",
+        "vpcCidr": "10.32.0.0/16"
+    }
+}

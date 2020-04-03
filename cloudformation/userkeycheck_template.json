@@ -1,0 +1,34 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "vpcName": {
+            "Type": "String",
+            "Description": "XXX"
+        },
+        "vpcCidr": {
+            "Type": "String",
+            "Description": "XXX"
+        }
+    },
+    "Resources": {
+        "VPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "vpcCidr"
+                },
+                "EnableDnsSupport": "true",
+                "EnableDnsHostnames": "true",
+                "InstanceTenancy": "default",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "vpcName"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
