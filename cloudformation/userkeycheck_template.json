@@ -77,7 +77,8 @@
                             "Effect": "Allow",
                             "Action": [
                                 "iam:ListUsers",
-                                "iam:ListAccessKeys"
+                                "iam:ListAccessKeys",
+                                "iam:ListUserTags"
                             ],
                             "Resource": "*"
                         },

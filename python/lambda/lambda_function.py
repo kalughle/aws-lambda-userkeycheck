@@ -14,17 +14,20 @@ def lambda_handler(event, context):
     
     # This should be the common IAM or Cloud alert address
     MAIN_RECIPIENT = "kalughle@gmail.com"
+
+    # This should be the common IAM or Cloud alert address
+    USERTAG_FOROWNEREMAIL = "OwnerEmail"
     
     # ==================================================================================================
     # Define the email function
-    def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT):
+    def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL):
         # The character encoding for the email.
         CHARSET = "UTF-8"
         
         # The subject line for the email.
         SUBJECT = "Expired User Alert!"
     
-        # The email body for recipients with non-HTML email clients.
+        # The email body for recipients with non-HTML email clients
         BODY_TEXT = (
             "The AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days\r"
             "\r"
@@ -35,7 +38,7 @@ def lambda_handler(event, context):
             "DaysLeft:  {DAYSLEFT}"
                     ).format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
                     
-        # The HTML body of the email.
+        # The HTML body of the email
         BODY_HTML = """<html>
         <head></head>
         <body>
@@ -59,6 +62,7 @@ def lambda_handler(event, context):
             Destination={
                 'ToAddresses': [
                     MAIN_RECIPIENT,
+                    OWNEREMAIL
                 ],
             },
             Message={
@@ -103,6 +107,17 @@ def lambda_handler(event, context):
                     CREATEDON = str(keyValue['CreateDate'].date())
                     EXPIRESON = str(expirationDate)
                     DAYSLEFT  = str(expirationDate - currentDate).split()[0]
+
+                    # Pull the user tags for this user
+                    userTags = iamClient.list_user_tags(UserName=keyValue['UserName'])
+                    
+                    # Filter out the keypair we're looking for. Logic to add or not
+                    ownerEmailObj = list(filter(lambda tag: tag['Key'] == USERTAG_FOROWNEREMAIL, userTags['Tags']))
+                    if not ownerEmailObj:
+                        print("empty")
+                        OWNEREMAIL = ''
+                    else:
+                        OWNEREMAIL = ownerEmailObj[0]['Value']
     
                     # Sent the email
-                    sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT)
+                    sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL)

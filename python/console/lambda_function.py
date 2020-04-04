@@ -15,9 +15,12 @@ SENDER_ADDRESS = "Lambda Alert <lambdaalert2@wolfbrigade.org>"
 # This should be the common IAM or Cloud alert address
 MAIN_RECIPIENT = "kalughle@gmail.com"
 
+# This should be the common IAM or Cloud alert address
+USERTAG_FOROWNEREMAIL = "OwnerEmail"
+
 # ==================================================================================================
 # Define the email function
-def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT):
+def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL):
     # Create the session using the designated profile (DELETE FOR LAMBDA!!)
     session = boto3.session.Session(profile_name=PROFILE_NAME)
     sesClient = session.client('ses',region_name=AWS_SES_REGION)
@@ -60,11 +63,17 @@ def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT):
         # Create a new SES resource and specify a region (UNCOMMENT FOR LAMBDA!!)
         #sesClient = boto3.client('ses',region_name=AWS_SES_REGION)
         
+        if not OWNEREMAIL:
+            finalToEmail = MAIN_RECIPIENT
+        else:
+            finalToEmail = MAIN_RECIPIENT + ', ' + OWNEREMAIL
+
         #Provide the contents of the email.
         response = sesClient.send_email(
             Destination={
                 'ToAddresses': [
                     MAIN_RECIPIENT,
+                    OWNEREMAIL
                 ],
             },
             Message={
@@ -117,5 +126,14 @@ for userList in iamClient.list_users()['Users']:
                 EXPIRESON = str(expirationDate)
                 DAYSLEFT  = str(expirationDate - currentDate).split()[0]
 
-                # Sent the email
-                sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT)
+                # Pull the designated email tag
+                userTags = iamClient.list_user_tags(UserName=keyValue['UserName'])
+                step2 = list(filter(lambda tag: tag['Key'] == USERTAG_FOROWNEREMAIL, userTags['Tags']))
+                if not step2:
+                    print("empty")
+                    OWNEREMAIL = ''
+                else:
+                    OWNEREMAIL = step2[0]['Value']
+
+                # Send the email
+                sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL)
