@@ -1,38 +1,27 @@
-Headers
-# This is an <h1> tag
-## This is an <h2> tag
-###### This is an <h6> tag
-Emphasis
-*This text will be italic*
-_This will also be italic_
+# User Key Check
 
-**This text will be bold**
-__This will also be bold__
+**Description**: XXX
 
-_You **can** combine them_
-Lists
-Unordered
-* Item 1
-* Item 2
-  * Item 2a
-  * Item 2b
-Ordered
-1. Item 1
-1. Item 2
-1. Item 3
-   1. Item 3a
-   1. Item 3b
-Images
-![GitHub Logo](/images/logo.png)
-Format: ![Alt Text](url)
-Links
-http://github.com - automatic!
-[GitHub](http://github.com)
-Blockquotes
-As Kanye West said:
+## Install/Configure
 
-> We're living the future so
-> the present is our past.
-Inline code
-I think you should use an
-`<addr>` element here instead.
+XXX
+
+## Usage
+
+XXX
+
+#### Assumptions
+
+XXX
+
+#### General Usage
+
+XXX
+
+## License
+
+This code is released under the MIT License. See [LICENSE.txt](/LICENSE.txt).
+
+## TODO
+
+XXX
