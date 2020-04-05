@@ -44,6 +44,8 @@ This repo is a full cloudformation deployment of a lambda script to monitor your
         * s3FileKey
             * The path and filename of the Lambda Zip file is located in the bucket
             * *Ex. "dir/sub-dir/filename.zip"*
+        * cronSchedule
+            * The schedule, in 6 characher cron format, that you want to run the Lambda on. Ex of 1:30pm GMT M-F: "30 13 ? * MON-FRI *"
     1. Create the stack
 
 ## License
