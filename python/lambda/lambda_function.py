@@ -18,14 +18,14 @@ def lambda_handler(event, context):
     # This should be the name of the AWS Tag that houses the IAM account owners email
     USERTAG_FOROWNEREMAIL = "OwnerEmail"
 
-    # Xxx
+    # Number of days before expiration that you want to start alerting at
     DAYSBEFOREWARN = 14
 
-    # Xxx
+    # Total number of days from creation of the access key until it expires
     DAYSTOEXPIRE = 90
     
     # ---------- DERIVED VARIABLES -------------------------------------------------
-    # Xxx
+    # The script uses daysToWarn instead of DAYSBEFOREWARN. Here we do that transform
     daysToWarn = DAYSTOEXPIRE - DAYSBEFOREWARN
 
     # ---------- ALL FUNCTIONS -----------------------------------------------------
