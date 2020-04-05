@@ -9,7 +9,7 @@ ZIPFILENAME = 'userkeycheck_lambda.zip'
 lambdaFileAbs = os.path.dirname(pathlib.Path(__file__).parent.absolute()) + '\\lambda\\' + LAMBDAFILENAME
 zipFileAbs = os.path.dirname(pathlib.Path(__file__).absolute()) + '\\' + ZIPFILENAME
 
-# ---------- EXECUTION SECTION -------------------------------------------------
+# ========== EXECUTION SECTION =================================================
 try:
     # writing files to a zipfile 
     with ZipFile(zipFileAbs,'w') as zip: 

@@ -3,31 +3,35 @@
     "Parameters": {
         "lambdaRoleName": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "A unique name of your choosing to tag this IAM Role"
         },
         "inlinePolicyName": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "A unique name of your choosing to tag this Inline IAM Policy"
         },
         "lambdaFunctionName": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "A unique name of your choosing to tag this Lambda Function"
         },
         "eventsRuleName": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "A unique name of your choosing to tag this CloudWatch Event Rule"
         },
         "sesDomainArn": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "The ARN of the SES Domain you would like to use for this function"
         },
         "s3BucketName": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "The name (not the ARN) of the bucket where the Lambda Zip file is located"
         },
         "s3FileKey": {
             "Type": "String",
-            "Description": "XXX"
+            "Description": "The path and filename of the Lambda Zip file is located in the bucket. Ex: 'dir/sub-dir/filename.zip'"
+        },
+        "cronSchedule": {
+            "Type": "String",
+            "Description": "The schedule, in 6 characher cron format, that you want to run the Lambda on. An example of 1:30pm GMT M-F: '30 13 ? * MON-FRI *'"
         }
     },
     "Resources": {
@@ -160,7 +164,16 @@
                     "Ref": "eventsRuleName"
                 },
                 "Description": "ScheduledRule",
-                "ScheduleExpression": "cron(30 13 ? * MON-FRI *)",
+                "ScheduleExpression": {
+                    "Fn::Sub": [
+                        "cron(${cronJob})",
+                        {
+                            "cronJob": {
+                                "Ref": "cronSchedule"
+                            }
+                        }
+                    ]
+                },
                 "State": "ENABLED",
                 "Targets": [
                     {
@@ -170,7 +183,7 @@
                                 "Arn"
                             ]
                         },
-                        "Id": "Wolf-TargetFunctionV1"
+                        "Id": "TargetFunctionV1"
                     }
                 ]
             }
