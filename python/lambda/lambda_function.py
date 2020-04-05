@@ -5,7 +5,7 @@ def lambda_handler(event, context):
     from datetime import timedelta, date
     from botocore.exceptions import ClientError
     
-    # ---------- GLOBAL VARIABLES ----------------------------------------------------------------------
+    # ---------- CONFIG VARIABLES --------------------------------------------------
     # If necessary, replace us-west-2 with the AWS Region you're using for Amazon SES.
     AWS_SES_REGION = "us-west-2"
     
@@ -15,34 +15,33 @@ def lambda_handler(event, context):
     # This should be the common IAM or Cloud alert address
     MAIN_RECIPIENT = "kalughle@gmail.com"
 
-    # This should be the common IAM or Cloud alert address
+    # This should be the name of the AWS Tag that houses the IAM account owners email
     USERTAG_FOROWNEREMAIL = "OwnerEmail"
+
+    # Xxx
+    DAYSBEFOREWARN = 14
+
+    # Xxx
+    DAYSTOEXPIRE = 90
     
-    # ==================================================================================================
-    # Define the email function
+    # ---------- DERIVED VARIABLES -------------------------------------------------
+    # Xxx
+    daysToWarn = DAYSTOEXPIRE - DAYSBEFOREWARN
+
+    # ---------- ALL FUNCTIONS -----------------------------------------------------
+    # Send Simple Email Service Email Function
     def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL):
-        # The character encoding for the email.
+        # The character encoding for the email
         CHARSET = "UTF-8"
         
-        # The subject line for the email.
-        SUBJECT = "Expired User Alert!"
-    
-        # The email body for recipients with non-HTML email clients
-        BODY_TEXT = (
-            "The AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days\r"
-            "\r"
-            "UserName:  {USERNAME}\r"
-            "AccessKey: {ACCESSKEY}\r"
-            "CreatedOn: {CREATEDON}\r"
-            "ExpiresOn: {EXPIRESON}\r"
-            "DaysLeft:  {DAYSLEFT}"
-                    ).format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
+        # The subject line for the email
+        SUBJECT = "AWS IAM Expiring User Alert!"
                     
         # The HTML body of the email
         BODY_HTML = """<html>
         <head></head>
         <body>
-            <h1>The AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days</h1>
+            <h1>The IAM AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days</h1>
             <p>
             <br><b>UserName</b>:  {USERNAME}
             <br><b>AccessKey</b>: {ACCESSKEY}
@@ -52,12 +51,23 @@ def lambda_handler(event, context):
             </p>
         </body>
         </html>
-                    """.format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
+        """.format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
     
-        # Create a new SES resource and specify a region.
+        # The email body for recipients with non-HTML email clients
+        BODY_TEXT = (
+            "The IAM AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days\r"
+            "\r"
+            "UserName:  {USERNAME}\r"
+            "AccessKey: {ACCESSKEY}\r"
+            "CreatedOn: {CREATEDON}\r"
+            "ExpiresOn: {EXPIRESON}\r"
+            "DaysLeft:  {DAYSLEFT}"
+        ).format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
+                    
+        # Create a new SES resource and specify the region of the SES service in use
         sesClient = boto3.client('ses',region_name=AWS_SES_REGION)
 
-        #Provide the contents of the email.
+        # Provide the contents of the email, and send
         sesClient.send_email(
             Destination={
                 'ToAddresses': [
@@ -84,24 +94,24 @@ def lambda_handler(event, context):
             Source=SENDER_ADDRESS,
         )
     
-    # ==================================================================================================
-    # Execution
+    # ========== EXECUTION SECTION =================================================
     # Set the client. Should be "boto3.client('iam') for Lambda
     iamClient = boto3.client('iam')
     
-    # Loop through the user list and pull keys. Check them, and add em to an array if over 90 days
+    # Loop through the user list and their keys. Pull keys if active and...
     for userList in iamClient.list_users()['Users']:
         userKeys = iamClient.list_access_keys(UserName=userList['UserName'])
         for keyValue in userKeys['AccessKeyMetadata']:
             if keyValue['Status'] == 'Active':
+                # Check them. If older than daysToWarn...
                 currentDate = date.today()
                 activeDays = currentDate - keyValue['CreateDate'].date()
                 
-                if activeDays >= datetime.timedelta(days=75):
+                if activeDays >= datetime.timedelta(days=daysToWarn):
                     # Find the actual expiration date
-                    expirationDate = keyValue['CreateDate'].date() + timedelta(days=89)
+                    expirationDate = keyValue['CreateDate'].date() + timedelta(days=DAYSTOEXPIRE)
                     
-                    # Set the email variables
+                    # Set the email variables to send
                     USERNAME  = userList['UserName']
                     ACCESSKEY = keyValue['AccessKeyId']
                     CREATEDON = str(keyValue['CreateDate'].date())
@@ -111,7 +121,7 @@ def lambda_handler(event, context):
                     # Pull the user tags for this user
                     userTags = iamClient.list_user_tags(UserName=keyValue['UserName'])
                     
-                    # Filter out the keypair we're looking for. Logic to add or not
+                    # Filter out the owner email address keypair we're looking for
                     ownerEmailObj = list(filter(lambda tag: tag['Key'] == USERTAG_FOROWNEREMAIL, userTags['Tags']))
                     if not ownerEmailObj:
                         print("empty")
@@ -119,5 +129,5 @@ def lambda_handler(event, context):
                     else:
                         OWNEREMAIL = ownerEmailObj[0]['Value']
     
-                    # Sent the email
+                    # Send the email to the appropriate people
                     sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL)

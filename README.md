@@ -17,29 +17,35 @@ This repo is a full cloudformation deployment of a lambda script to monitor your
         * MAIN_RECIPIENT
             * This should be the address of the governing team, **not** the account owner
         * USERTAG_FOROWNEREMAIL
-            * This identifies the Tag that houses the email address of the owner of the account
+            * This identifies the AWS Tag that houses the email address of the owner of the account
+        * DAYSBEFOREWARN
+            * The number of days before expiration that you want to begin alerting
+        * DAYSTOEXPIRE
+            * The number of days until the key expires (from the creation date)
     1. Save the file
 1. Zip the file and upload to S3
     * Record the **Path and File Name** as the key *(s3FileKey)*
-        * Ex. dir/sub-dir/filename.txt
-
-
-## Usage
-
-XXX
-
-#### Assumptions
-
-XXX
-
-#### General Usage
-
-XXX
+        * *Ex. dir/sub-dir/filename.zip*
+    * *Note*: "filename.zip" does not have to match the "lambda_function" name
+1. Load the CloudFormatrion template located in "cloudformation/userkeycheck_template.json"
+    1. Fill out the required parameters:
+        * lambdaRoleName
+            * A unique name of your choosing to tag this IAM Role
+        * inlinePolicyName
+            * A unique name of your choosing to tag this Inline IAM Policy
+        * lambdaFunctionName
+            * A unique name of your choosing to tag this Lambda Function
+        * eventsRuleName
+            * A unique name of your choosing to tag this CloudWatch Event Rule
+        * sesDomainArn
+            * The ARN of the SES Domain you would like to use for this function
+        * s3BucketName
+            * The name (not the ARN) of the bucket where the Lambda Zip file is located
+        * s3FileKey
+            * The path and filename of the Lambda Zip file is located in the bucket
+            * *Ex. "dir/sub-dir/filename.zip"*
+    1. Create the stack
 
 ## License
 
 This code is released under the MIT License. See [LICENSE.txt](/LICENSE.txt).
-
-## TODO
-
-XXX
