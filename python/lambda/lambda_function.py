@@ -30,7 +30,7 @@ def lambda_handler(event, context):
 
     # ---------- ALL FUNCTIONS -----------------------------------------------------
     # Send Simple Email Service Email Function
-    def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL):
+    def sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL, ACCOUNTID):
         # The character encoding for the email
         CHARSET = "UTF-8"
         
@@ -41,8 +41,9 @@ def lambda_handler(event, context):
         BODY_HTML = """<html>
         <head></head>
         <body>
-            <h1>The IAM AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days</h1>
+            <h1>The IAM AccessKey in account {ACCOUNTID} for the user {USERNAME} will expire in {DAYSLEFT} days</h1>
             <p>
+            <br><b>AccountID</b>: {ACCOUNTID}
             <br><b>UserName</b>:  {USERNAME}
             <br><b>AccessKey</b>: {ACCESSKEY}
             <br><b>CreatedOn</b>: {CREATEDON}
@@ -51,18 +52,19 @@ def lambda_handler(event, context):
             </p>
         </body>
         </html>
-        """.format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
+        """.format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT, ACCOUNTID=ACCOUNTID)
     
         # The email body for recipients with non-HTML email clients
         BODY_TEXT = (
-            "The IAM AccessKey for the user {USERNAME} will expire in {DAYSLEFT} days\r"
+            "The IAM AccessKey in account {ACCOUNTID} for the user {USERNAME} will expire in {DAYSLEFT} days\r"
             "\r"
+            "AccountID: {ACCOUNTID}\r"
             "UserName:  {USERNAME}\r"
             "AccessKey: {ACCESSKEY}\r"
             "CreatedOn: {CREATEDON}\r"
             "ExpiresOn: {EXPIRESON}\r"
             "DaysLeft:  {DAYSLEFT}"
-        ).format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT)
+        ).format(USERNAME=USERNAME, ACCESSKEY=ACCESSKEY, CREATEDON=CREATEDON, EXPIRESON=EXPIRESON, DAYSLEFT=DAYSLEFT, ACCOUNTID=ACCOUNTID)
                     
         # Create a new SES resource and specify the region of the SES service in use
         sesClient = boto3.client('ses',region_name=AWS_SES_REGION)
@@ -100,6 +102,9 @@ def lambda_handler(event, context):
     # Set the client. Should be "boto3.client('iam') for Lambda
     iamClient = boto3.client('iam')
     
+    # Pull the account number
+    ACCOUNTID = boto3.client('sts').get_caller_identity().get('Account')
+
     # Loop through the user list and their keys. Pull keys if active and...
     for userList in iamClient.list_users()['Users']:
         userKeys = iamClient.list_access_keys(UserName=userList['UserName'])
@@ -126,10 +131,9 @@ def lambda_handler(event, context):
                     # Filter out the owner email address keypair we're looking for
                     ownerEmailObj = list(filter(lambda tag: tag['Key'] == USERTAG_FOROWNEREMAIL, userTags['Tags']))
                     if not ownerEmailObj:
-                        print("empty")
                         OWNEREMAIL = ''
                     else:
                         OWNEREMAIL = ownerEmailObj[0]['Value']
     
                     # Send the email to the appropriate people
-                    sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL)
+                    sendSesEmail(USERNAME, ACCESSKEY, CREATEDON, EXPIRESON, DAYSLEFT, OWNEREMAIL, ACCOUNTID)
