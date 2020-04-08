@@ -67,13 +67,15 @@ def lambda_handler(event, context):
         # Create a new SES resource and specify the region of the SES service in use
         sesClient = boto3.client('ses',region_name=AWS_SES_REGION)
 
+        if not OWNEREMAIL:
+            finalToEmail = [MAIN_RECIPIENT]
+        else:
+            finalToEmail = [MAIN_RECIPIENT + ', ' + OWNEREMAIL]
+            
         # Provide the contents of the email, and send
         sesClient.send_email(
             Destination={
-                'ToAddresses': [
-                    MAIN_RECIPIENT,
-                    OWNEREMAIL
-                ],
+                'ToAddresses': finalToEmail,
             },
             Message={
                 'Body': {
