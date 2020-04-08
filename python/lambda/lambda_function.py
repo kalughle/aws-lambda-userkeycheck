@@ -70,7 +70,7 @@ def lambda_handler(event, context):
         if not OWNEREMAIL:
             finalToEmail = [MAIN_RECIPIENT]
         else:
-            finalToEmail = [MAIN_RECIPIENT + ', ' + OWNEREMAIL]
+            finalToEmail = [MAIN_RECIPIENT, OWNEREMAIL]
             
         # Provide the contents of the email, and send
         sesClient.send_email(
